@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from docopt import docopt
 from mimetypes import guess_type
@@ -6,9 +6,8 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
-from cStringIO import StringIO
-from docx import Document as docx_doc
-from miette import DocReader as doc_doc
+from io import StringIO
+import textract
 import xlrd 
 import re
 
@@ -28,7 +27,7 @@ def pdf_to_txt(file_):
     codec = 'utf-8'
     laparams = LAParams()
     device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
-    fp = file(file_, 'rb')
+    fp = open(file_, 'rb')
     interpreter = PDFPageInterpreter(rsrcmgr, device)
     password = ""
     maxpages = 0
@@ -40,7 +39,10 @@ def pdf_to_txt(file_):
     fp.close()
     device.close()
     retstr.close()
-    return(txt)
+    if type(txt) == 'bytes':
+        return(txt.decode("utf-8"))
+    else:
+        return(txt)
 
 def excel_to_txt(file_):
     '''convert an excel to text'''
@@ -59,24 +61,35 @@ def excel_to_txt(file_):
             txt += line + '\n'
             row += 1
         i += 1
-    return(txt)
+    if type(txt) == 'bytes':
+        return(txt.decode("utf-8"))
+    else:
+        return(txt)
 
 
 def docx_to_txt(file_):
     '''convert .docx to text'''
-    docx = docx_doc(file_)
-    txt = str()
-    for i in docx.paragraphs:
-        txt += ' ' + i.text.encode('utf-8')
-    return(txt)
+    txt = textract.process(file_, extension='docx')
+    # docx = docx_doc(file_)
+    # txt = str()
+    # for i in docx.paragraphs:
+    #     txt += ' ' + i.text.encode('utf-8')
+    if type(txt) == 'bytes':
+        return(txt.decode("utf-8"))
+    else:
+        return(txt)
 
 
 def doc_to_txt(file_):
     '''convert .doc to text'''
-    doc = doc_doc(file_)
-    # fix carriage returns
-    txt = re.sub(r'\r', r'\r\n', doc.read())
-    return(txt)
+    txt = textract.process(file_, extension='doc')
+    # doc = doc_doc(file_)
+    # # fix carriage returns
+    # txt = re.sub(r'\r', r'\r\n', doc.read())
+    if type(txt) == 'bytes':
+        return(txt.decode("utf-8"))
+    else:
+        return(txt)
 
 
 def observables_from_txt(txt):
